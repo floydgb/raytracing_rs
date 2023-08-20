@@ -1,5 +1,6 @@
 use std::{fs::File, io::Write};
 use indicatif::ProgressBar;
+use vec3::Vec3;
 
 mod vec3;
 mod color;
@@ -18,15 +19,14 @@ fn main() {
             for  j in 0..image_height  {
                 pb.inc(1);
                 for i in 0..image_width {
-                    let r:f64 = i as f64 / (image_width as f64 - 1.0);
-                    let g:f64 = j as f64 / (image_height as f64 - 1.0);
-                    let b:f64 = 0.0;
 
-                    let ir:f64 = (255.999 * r).round();
-                    let ig:f64 = (255.999 * g).round();
-                    let ib:f64 = (255.999 * b).round();
+                    let pixel_color: Vec3 = Vec3::new(
+                        i as f64 / (image_width as f64 - 1.0),
+                        j as f64 / (image_height as f64 - 1.0),
+                        0.0,
+                    );
 
-                    write!(&mut buffer, "{} {} {}\n", ir as i32, ig as i32 , ib as i32).expect("error writing the colors");
+                    write!(&mut buffer, "{}", color::write_color(&pixel_color) ).expect("error writing the colors");
 
                 }
             }
