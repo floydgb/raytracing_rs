@@ -41,7 +41,7 @@ impl Add for Vec3 {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
-        Self {x: self.x + other.x, y: self.y + other.y, z: self.z + other.z}
+        Vec3 {x: self.x + other.x, y: self.y + other.y, z: self.z + other.z}
     }
 }
 
@@ -49,7 +49,7 @@ impl Add for Vec3 {
 impl Neg for Vec3 {
     type Output = Self;
     fn neg(self) -> Self::Output {
-        Self {x: -self.x, y: -self.y, z: -self.z}
+        Vec3 {x: -self.x, y: -self.y, z: -self.z}
     }
 }
 
@@ -57,7 +57,7 @@ impl Neg for Vec3 {
 impl Sub for Vec3 {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
-        Self {
+        Vec3 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z,
@@ -65,11 +65,11 @@ impl Sub for Vec3 {
     }
 }
 
-// overloading for the multiplication operation
+// overloading for the multiplication operation for Vec3 * f64
 impl Mul for Vec3 {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self::Output {
-        Self {
+        Vec3 {
             x: self.x * rhs.x,
             y: self.y * rhs.y,
             z: self.z * rhs.z,
@@ -77,11 +77,25 @@ impl Mul for Vec3 {
     }
 }
 
+// overloading the multiplication operation for f64 * Vec3
+impl Mul<Vec3> for f64 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Vec3 {
+            x: self * rhs.x,
+            y: self * rhs.y,
+            z: self * rhs.z,
+        }
+    }
+}
+
+
 // overloading for the mumtiplication by float
 impl Mul<f64> for Vec3 {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self::Output {
-        Self {
+        Vec3 {
             x: self.x * rhs,
             y: self.y * rhs,
             z: self.z * rhs,
@@ -93,7 +107,7 @@ impl Mul<f64> for Vec3 {
 impl Div<f64> for Vec3 {
     type Output = Self;
     fn div(self, t:f64) -> Self::Output {
-        Self {
+        Vec3 {
             x: self.x / t,
             y: self.y / t,
             z: self.z / t,
