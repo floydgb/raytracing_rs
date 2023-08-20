@@ -1,6 +1,6 @@
 use std::{fs::File, io::Write};
 use indicatif::ProgressBar;
-use vec3::{Vec3, unit_vector};
+use vec3::{Vec3, unit_vector, dot};
 use ray::Ray;
 
 mod vec3;
@@ -9,11 +9,31 @@ mod ray;
 
 
 fn ray_color(r: Ray) -> Vec3 {
+    let t: f64 = hit_sphere(Vec3::new(0.0, 0.0, -1.0), 0.5, &r);
+    if t > 0.0 {
+        let N = unit_vector(r.at(t) - Vec3::new(0.0, 0.0, -1.0));
+        return 0.5 * Vec3::new(N.x()+1.0, N.y()+1.0, N.z()+1.0);
+    }
+
     let unit_direction: Vec3 = unit_vector(r.direction());
     let a = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - a) * Vec3::new(1.0, 1.0, 1.0) + a * Vec3::new(0.5, 0.7, 1.0);
 }
 
+fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> f64 {
+    let oc: Vec3 = r.origin() - center;
+    let a: f64 = dot(r.direction(), r.direction());
+    let b: f64 = 2.0 * dot(oc, r.direction());
+    let c: f64 = dot(oc, oc) - radius * radius;
+    let discriminant: f64 = b * b - 4.0 * a * c;
+
+    if discriminant < 0.0 {
+        return -1.0;
+    } else {
+        return (-b - discriminant.sqrt()) / (2.0 * a);
+    }
+
+}
 
 fn main() {
     let aspect_ratio: f64 = 16.0 / 9.0;

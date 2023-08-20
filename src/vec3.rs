@@ -169,12 +169,8 @@ impl DivAssign<f64> for Vec3 {
 }
 
 
-pub fn dot(u: Vec3, v: Vec3) -> Vec3 {
-    Vec3 {
-        x: u.x * v.x,
-        y: u.y * v.y,
-        z: u.z * v.z,
-    }
+pub fn dot(u: Vec3, v: Vec3) -> f64 {
+    u.x * v.x + u.y * v.y + u.z * v.z
 }
 
 pub fn cross(u: Vec3, v: Vec3) -> Vec3 {
