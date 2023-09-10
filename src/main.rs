@@ -1,38 +1,30 @@
 use std::{fs::File, io::Write};
+use hittable::{HitRecord, Hittable, HittableList};
 use indicatif::ProgressBar;
-use vec3::{Vec3, unit_vector, dot};
+use vec3::{Vec3, unit_vector};
 use ray::Ray;
+use sphere::Sphere;
 
 mod vec3;
 mod color;
 mod ray;
+mod hittable;
+mod sphere;
+mod rtweekend;
 
 
-fn ray_color(r: Ray) -> Vec3 {
-    let t: f64 = hit_sphere(Vec3::new(0.0, 0.0, -1.0), 0.5, &r);
-    if t > 0.0 {
-        let n: Vec3 = unit_vector(r.at(t) - Vec3::new(0.0, 0.0, -1.0));
-        return 0.5 * Vec3::new(n.x()+1.0, n.y()+1.0, n.z()+1.0);
+
+
+fn ray_color(r: Ray, world: &HittableList ) -> Vec3 {
+    let mut rec: HitRecord = HitRecord::initialize();
+
+    if world.hit(&r, 0.0, rtweekend::INFINITY, &mut rec) {
+        return 0.5 * (rec.normal + Vec3::new(1.0, 1.0, 1.0));
     }
 
     let unit_direction: Vec3 = unit_vector(r.direction());
     let a: f64 = 0.5 * (unit_direction.y() + 1.0);
     return (1.0 - a) * Vec3::new(1.0, 1.0, 1.0) + a * Vec3::new(0.5, 0.7, 1.0);
-}
-
-fn hit_sphere(center: Vec3, radius: f64, r: &Ray) -> f64 {
-    let oc: Vec3 = r.origin() - center;
-    let a: f64 = dot(r.direction(), r.direction());
-    let b: f64 = 2.0 * dot(oc, r.direction());
-    let c: f64 = dot(oc, oc) - radius * radius;
-    let discriminant: f64 = b * b - 4.0 * a * c;
-
-    if discriminant < 0.0 {
-        return -1.0;
-    } else {
-        return (-b - discriminant.sqrt()) / (2.0 * a);
-    }
-
 }
 
 fn main() {
@@ -43,6 +35,12 @@ fn main() {
     if image_height < 1 {
         image_height = 1;
     }
+
+    let mut world: HittableList = HittableList::new(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
+    world.add(Box::new(Sphere::new(Vec3::new(0.0, -100.5, -1.0), 100.0)));
+
+//    let mut world: HittableList = HittableList::new(Box::new(Sphere::new(Vec3::new(0.0, -100.0, -1.0), 100.0)));
+//    world.add(Box::new(Sphere::new(Vec3::new(0.0, 0.0, -1.0), 0.5)));
 
     let focal_length: f64 = 1.0;
     let viewport_height: f64 = 2.0;
@@ -57,8 +55,6 @@ fn main() {
 
     let viewport_upper_left: Vec3 = camera_center - Vec3::new(0.0, 0.0, focal_length) - viewport_u / 2.0 - viewport_v / 2.0;
     let pixel00_loc: Vec3 = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
-
-
 
 
     // Render
@@ -76,7 +72,7 @@ fn main() {
                     let ray_direction: Vec3 = pixel_center - camera_center;
                     
                     let r: Ray = Ray::new(camera_center, ray_direction);
-                    let pixel_color: Vec3 = ray_color(r);
+                    let pixel_color: Vec3 = ray_color(r, &world);
 
                     write!(&mut buffer, "{}", color::write_color(&pixel_color) ).expect("error writing the colors");
 
@@ -86,7 +82,7 @@ fn main() {
 
         }
         Err(e) => {
-            println!("Could not open file...")
+            println!("Could not open file... {}", e)
         }
     }
 }
