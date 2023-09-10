@@ -1,5 +1,6 @@
 use crate::vec3::{Vec3, dot};
 use crate::ray::Ray;
+use crate::interval::Interval;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -39,7 +40,7 @@ impl HitRecord {
 }
 
 pub trait Hittable {
-    fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64, rec: &mut HitRecord) -> bool;
+    fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool;
 }
 
 pub struct HittableList {
@@ -47,8 +48,8 @@ pub struct HittableList {
 }
 
 impl HittableList {
-    pub fn new(object: Box<dyn Hittable> ) -> HittableList {
-        HittableList { objects: vec!(object) }
+    pub fn new(object: Box<dyn Hittable> ) -> Self {
+        Self { objects: vec!(object) }
     }
 
     pub fn add(& mut self, object: Box<dyn Hittable>) {
@@ -56,13 +57,13 @@ impl HittableList {
         
     }
 
-    pub fn hit(&self, r: &Ray, ray_tmin: f64, ray_tmax: f64, rec: &mut HitRecord) -> bool {
+    pub fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {
         let mut temp_rec: HitRecord = HitRecord::initialize();
         let mut hit_anything: bool = false;
-        let mut closest_so_far: f64 = ray_tmax;
+        let mut closest_so_far: f64 = ray_t.max;
 
         for object in self.objects.iter() {
-            if object.hit(r, ray_tmin, closest_so_far, &mut temp_rec) {
+            if object.hit(r, Interval::new(ray_t.min, closest_so_far), &mut temp_rec) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 *rec = temp_rec.clone();

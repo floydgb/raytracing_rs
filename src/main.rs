@@ -4,6 +4,7 @@ use indicatif::ProgressBar;
 use vec3::{Vec3, unit_vector};
 use ray::Ray;
 use sphere::Sphere;
+use interval::Interval;
 
 mod vec3;
 mod color;
@@ -11,6 +12,7 @@ mod ray;
 mod hittable;
 mod sphere;
 mod rtweekend;
+mod interval;
 
 
 
@@ -18,7 +20,7 @@ mod rtweekend;
 fn ray_color(r: Ray, world: &HittableList ) -> Vec3 {
     let mut rec: HitRecord = HitRecord::initialize();
 
-    if world.hit(&r, 0.0, rtweekend::INFINITY, &mut rec) {
+    if world.hit(&r, Interval::new(0.0, rtweekend::INFINITY), &mut rec) {
         return 0.5 * (rec.normal + Vec3::new(1.0, 1.0, 1.0));
     }
 
