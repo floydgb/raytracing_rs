@@ -7,12 +7,13 @@ use crate::rtweekend;
 use Vec3 as point3;
 use indicatif::ProgressBar;
 use std::{fs::File, io::Write};
-
+use rand;
 
 pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: u32,
-    
+    pub sample_per_pixel: u32,
+
     image_height: u32,
     center: Vec3,
     pixel00_loc: Vec3,
@@ -41,7 +42,9 @@ impl Camera {
             center: Vec3::new(0.0, 0.0, 0.0), 
             pixel00_loc: Vec3::new(0.0, 0.0, 0.0), 
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0), 
-            pixel_delta_v: Vec3::new(0.0, 0.0, 0.0) }
+            pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
+            sample_per_pixel: 10,
+        }
     }
 
     fn initialize(&mut self) {
@@ -70,7 +73,6 @@ impl Camera {
     pub fn render(&mut self, world: &HittableList) {
         self.initialize();
 
-        // Render
         match File::create("image.ppm") {
             Ok(mut buffer) => {
                 write!(&mut buffer, "P3\n{} {}\n255\n", self.image_width, self.image_height).expect("Can't write");
@@ -81,14 +83,14 @@ impl Camera {
                     pb.inc(1);
                     for i in 0..self.image_width {
 
-                        let pixel_center: Vec3 = self.pixel00_loc + ((i as f64) * self.pixel_delta_u) + ((j as f64) * self.pixel_delta_v);
-                                                
-                        let ray_direction: Vec3 = pixel_center - self.center;
-                        
-                        let r: Ray = Ray::new(self.center, ray_direction);
-                        let pixel_color: Vec3 = ray_color(r, &world);
+                        let mut pixel_color: Vec3 = Vec3::new(0.0, 0.0, 0.0);
 
-                        write!(&mut buffer, "{}", write_color(&pixel_color) ).expect("error writing the colors");
+                        for _sample in 0..self.sample_per_pixel {
+                            let r: Ray = self.get_ray(i, j);
+                            pixel_color += ray_color(r, world);
+                        }
+
+                        write!(&mut buffer, "{}", write_color(&pixel_color, self.sample_per_pixel)).expect("error writing the colors");
 
                     }
                 }
@@ -99,5 +101,23 @@ impl Camera {
                 println!("Could not open file... {}", e)
             }
         }
+    }
+
+    fn get_ray(&mut self, i: u32, j: u32) -> Ray {
+        let pixel_center: Vec3 = self.pixel00_loc + ((i as f64) * self.pixel_delta_u) + ((j as f64) * self.pixel_delta_v);
+        let pixel_sample = pixel_center + self.pixel_sample_square();
+        let ray_origin = self.center;
+        let ray_direction = pixel_sample - ray_origin;
+
+        Ray::new(ray_origin, ray_direction)
+
+    }
+
+    fn pixel_sample_square(&mut self) -> Vec3 {
+        let px: f64 = -0.5 + rand::random::<f64>();
+        let py : f64 = -0.5 + rand::random::<f64>();
+
+        (px * self.pixel_delta_u) + (py * self.pixel_delta_v)
+
     }
 }
