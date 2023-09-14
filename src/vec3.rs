@@ -1,5 +1,6 @@
 use core::panic;
 use std::ops::{Add, Sub, Div, Mul, Neg, Index, IndexMut, AddAssign, MulAssign, DivAssign};
+use rand::{random, Rng};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vec3 {
@@ -12,6 +13,22 @@ impl Vec3{
 
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Vec3 { x: x, y: y, z: z }
+    }
+
+    pub fn random() -> Self {
+        Self {
+            x: random::<f64>(),
+            y: random::<f64>(),
+            z: random::<f64>(),
+        }
+    }
+
+    pub fn random_minmax(min: f64, max: f64) -> Self {
+        Self {
+            x: rand::thread_rng().gen_range(min..max),
+            y: rand::thread_rng().gen_range(min..max),
+            z: rand::thread_rng().gen_range(min..max),
+        }
     }
 
     pub fn x(&self) -> f64 {
@@ -186,3 +203,23 @@ pub fn unit_vector(v: Vec3) -> Vec3 {
     result
 }
 
+pub fn random_in_unit_sphere() -> Vec3 {
+    let mut p = Vec3::random_minmax(-1.0,1.0);
+    while p.length_squared() > 1.0 {
+        p = Vec3::random_minmax(-1.0, 1.0);
+    }
+    p
+}
+
+pub fn random_unit_vector() -> Vec3 {
+    unit_vector(random_in_unit_sphere())
+}
+
+pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
+    let on_unit_sphere: Vec3 = random_unit_vector();
+    if dot(on_unit_sphere, normal) > 0.0 {
+        on_unit_sphere
+    } else {
+        -on_unit_sphere
+    }
+}

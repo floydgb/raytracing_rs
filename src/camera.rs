@@ -1,4 +1,4 @@
-use crate::vec3::{Vec3, unit_vector};
+use crate::vec3::{Vec3, unit_vector, random_unit_vector};
 use crate::hittable::{HittableList, HitRecord};
 use crate::ray::Ray;
 use crate::color::write_color;
@@ -13,6 +13,7 @@ pub struct Camera {
     pub aspect_ratio: f64,
     pub image_width: u32,
     pub sample_per_pixel: u32,
+    pub max_depth: u32,
 
     image_height: u32,
     center: Vec3,
@@ -21,11 +22,16 @@ pub struct Camera {
     pixel_delta_v: point3,
 }
 
-fn ray_color(r: Ray, world: &HittableList ) -> Vec3 {
+fn ray_color(r: Ray, depth: u32, world: &HittableList ) -> Vec3 {
     let mut rec: HitRecord = HitRecord::initialize();
 
-    if world.hit(&r, Interval::new(0.0, rtweekend::INFINITY), &mut rec) {
-        return 0.5 * (rec.normal + Vec3::new(1.0, 1.0, 1.0));
+    if depth <= 0 {
+        return Vec3::new(0.0, 0.0, 0.0);
+    }
+
+    if world.hit(&r, Interval::new(0.001, rtweekend::INFINITY), &mut rec) {
+        let direction = rec.normal + random_unit_vector();
+        return 0.5 * ray_color(Ray::new(rec.p, direction),depth-1, world);
     }
 
     let unit_direction: Vec3 = unit_vector(r.direction());
@@ -44,6 +50,7 @@ impl Camera {
             pixel_delta_u: Vec3::new(0.0, 0.0, 0.0), 
             pixel_delta_v: Vec3::new(0.0, 0.0, 0.0),
             sample_per_pixel: 10,
+            max_depth: 10,
         }
     }
 
@@ -87,7 +94,7 @@ impl Camera {
 
                         for _sample in 0..self.sample_per_pixel {
                             let r: Ray = self.get_ray(i, j);
-                            pixel_color += ray_color(r, world);
+                            pixel_color += ray_color(r, self.max_depth, world);
                         }
 
                         write!(&mut buffer, "{}", write_color(&pixel_color, self.sample_per_pixel)).expect("error writing the colors");
