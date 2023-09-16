@@ -1,6 +1,8 @@
 use crate::vec3::{Vec3, dot};
 use crate::ray::Ray;
 use crate::interval::Interval;
+use crate::material::{Lambertian, Material};
+use std::rc::Rc;
 
 #[derive(Clone)]
 pub struct HitRecord {
@@ -8,15 +10,17 @@ pub struct HitRecord {
     pub normal: Vec3,
     pub t: f64,
     pub front_face : bool,
+    pub material: Rc<dyn Material>,
 }
 
 impl HitRecord {
-    pub fn new(p: Vec3, normal: Vec3, t: f64, front_face: bool) -> Self {
+    pub fn new(p: Vec3, normal: Vec3, t: f64, front_face: bool, material: Rc<dyn Material>) -> Self {
         HitRecord{
             p: p,
             normal: normal,
             t: t,
             front_face: front_face,
+            material: material,
         }
     }
 
@@ -25,7 +29,8 @@ impl HitRecord {
             p: Vec3::new(0.0, 0.0, 0.0),
             normal: Vec3::new(0.0, 0.0, 0.0), 
             t: 1E8, 
-            front_face: false, 
+            front_face: false,
+            material: Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0))),
         }
     }
 
@@ -54,7 +59,6 @@ impl HittableList {
 
     pub fn add(& mut self, object: Box<dyn Hittable>) {
         self.objects.push(object);
-        
     }
 
     pub fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut HitRecord) -> bool {

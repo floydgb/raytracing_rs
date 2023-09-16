@@ -1,4 +1,4 @@
-use crate::vec3::{Vec3, unit_vector, random_unit_vector};
+use crate::vec3::{Vec3, unit_vector};
 use crate::hittable::{HittableList, HitRecord};
 use crate::ray::Ray;
 use crate::color::write_color;
@@ -30,8 +30,13 @@ fn ray_color(r: Ray, depth: u32, world: &HittableList ) -> Vec3 {
     }
 
     if world.hit(&r, Interval::new(0.001, rtweekend::INFINITY), &mut rec) {
-        let direction = rec.normal + random_unit_vector();
-        return 0.5 * ray_color(Ray::new(rec.p, direction),depth-1, world);
+        let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0),Vec3::new(0.0, 0.0, 0.0));
+        let mut attenuation = Vec3::new(0.0, 0.0, 0.0);
+        if rec.clone().material.scatter(&r, &mut rec, &mut attenuation, &mut scattered) {
+            return attenuation * ray_color(scattered,depth-1, world);
+        }
+        return Vec3::new(0.0, 0.0, 0.0);
+
     }
 
     let unit_direction: Vec3 = unit_vector(r.direction());
@@ -63,7 +68,7 @@ impl Camera {
         
         let focal_length:f64 = 1.0;
         let viewport_height: f64 = 2.0;
-        let viewport_width: f64  = viewport_height * (((self.image_width as f64) / (self.image_height as f64)));
+        let viewport_width: f64  = viewport_height * ((self.image_width as f64) / (self.image_height as f64));
 
         let viewport_u: Vec3 = Vec3::new(viewport_width, 0.0, 0.0);
         let viewport_v: Vec3 = Vec3::new(0.0, -viewport_height, 0.0);
