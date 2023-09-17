@@ -37,6 +37,11 @@ fn main() {
     cam.sample_per_pixel = 100;
     cam.max_depth = 50;
 
+    cam.vfov = 20.0;
+    cam.look_from = Vec3::new(-2.0, 2.0, 1.0);
+    cam.look_at = Vec3::new(0.0, 0.0, -1.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+
     cam.render(&world);
 
 }
