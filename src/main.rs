@@ -13,7 +13,7 @@ mod color;
 mod ray;
 pub mod hittable;
 mod sphere;
-mod rtweekend;
+mod lib;
 mod interval;
 mod camera;
 pub mod material;

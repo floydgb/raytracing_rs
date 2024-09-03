@@ -1,4 +1,4 @@
-use crate::rtweekend::INFINITY;
+use crate::lib::INFINITY;
 
 
 pub struct Interval {
