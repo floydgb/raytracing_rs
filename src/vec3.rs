@@ -1,5 +1,5 @@
-use rand::{random, Rng};
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
+use rand::{ rngs::ThreadRng, Rng };
+use std::ops::{ Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Vec3 {
@@ -9,24 +9,8 @@ pub struct Vec3 {
 }
 
 impl Vec3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
+    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { x, y, z }
-    }
-
-    pub fn random() -> Self {
-        Self {
-            x: random::<f64>(),
-            y: random::<f64>(),
-            z: random::<f64>(),
-        }
-    }
-
-    pub fn random_minmax(min: f64, max: f64) -> Self {
-        Self {
-            x: rand::thread_rng().gen_range(min..max),
-            y: rand::thread_rng().gen_range(min..max),
-            z: rand::thread_rng().gen_range(min..max),
-        }
     }
 
     pub fn near_zero(&self) -> bool {
@@ -192,29 +176,23 @@ pub fn cross(u: Vec3, v: Vec3) -> Vec3 {
 }
 
 pub fn unit_vector(v: Vec3) -> Vec3 {
+    debug_assert!(v.length() > 0.0);
     let result = v / v.length();
     result
 }
 
-pub fn random_in_unit_sphere() -> Vec3 {
-    let mut p = Vec3::random_minmax(-1.0, 1.0);
-    while p.length_squared() > 1.0 {
-        p = Vec3::random_minmax(-1.0, 1.0);
-    }
-    p
+pub fn random_in_unit_sphere(rng: &mut ThreadRng) -> Vec3 {
+    let x: f64 = rng.gen_range(-1.0..=1.0);
+    let y_range = (1.0 - x * x).sqrt();
+    let y = rng.gen_range(-y_range..=y_range);
+    let z_range = (1.0 - x * x - y * y).sqrt();
+    let z = rng.gen_range(-z_range..=z_range);
+    debug_assert!((x * x + y * y + z * z).sqrt() <= 1.0);
+    Vec3::new(x, y, z)
 }
 
-pub fn random_unit_vector() -> Vec3 {
-    unit_vector(random_in_unit_sphere())
-}
-
-pub fn random_on_hemisphere(normal: Vec3) -> Vec3 {
-    let on_unit_sphere: Vec3 = random_unit_vector();
-    if dot(on_unit_sphere, normal) > 0.0 {
-        on_unit_sphere
-    } else {
-        -on_unit_sphere
-    }
+pub fn random_unit_vector(rng: &mut ThreadRng) -> Vec3 {
+    random_in_unit_sphere(rng)
 }
 
 pub fn reflect(v: Vec3, n: Vec3) -> Vec3 {
@@ -228,18 +206,11 @@ pub fn refract(uv: Vec3, n: Vec3, etai_over_etat: f64) -> Vec3 {
     r_out_perp + r_out_parallel
 }
 
-pub fn random_in_unit_disk() -> Vec3 {
-    let mut p = Vec3::new(
-        rand::thread_rng().gen_range(-1.0..1.0),
-        rand::thread_rng().gen_range(-1.0..1.0),
-        0.0,
-    );
-    while p.length_squared() > 1.0 {
-        p = Vec3::new(
-            rand::thread_rng().gen_range(-1.0..1.0),
-            rand::thread_rng().gen_range(-1.0..1.0),
-            0.0,
-        );
-    }
-    p
+// random vector in unit disk (xy plane) without looping
+pub fn random_in_unit_disk(rng: &mut ThreadRng) -> Vec3 {
+    let x: f64 = rng.gen_range(-1.0..=1.0);
+    let y_range = (1.0 - x * x).sqrt();
+    let y = rng.gen_range(-y_range..=y_range);
+    debug_assert!((x * x + y * y).sqrt() <= 1.0);
+    Vec3::new(x, y, 0.0)
 }

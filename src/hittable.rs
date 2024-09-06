@@ -1,8 +1,8 @@
 use crate::{
     interval::Interval,
-    material::{Lambertian, Material},
+    material::{ Lambertian, Material },
     ray::Ray,
-    vec3::{dot, Vec3},
+    vec3::{ dot, Vec3 },
 };
 use std::rc::Rc;
 
@@ -26,16 +26,6 @@ impl Hit {
         }
     }
 
-    pub fn initialize() -> Self {
-        Hit {
-            p: Vec3::new(0.0, 0.0, 0.0),
-            norm: Vec3::new(0.0, 0.0, 0.0),
-            t: 1e8,
-            frnt: false,
-            mat: Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0))),
-        }
-    }
-
     pub fn set_face_normal(&mut self, r: &Ray, outward_normal: Vec3) {
         self.frnt = dot(r.direction(), outward_normal) < 0.0;
         if self.frnt {
@@ -46,15 +36,27 @@ impl Hit {
     }
 }
 
+impl Default for Hit {
+    fn default() -> Self {
+        Hit {
+            p: Vec3::new(0.0, 0.0, 0.0),
+            norm: Vec3::new(0.0, 0.0, 0.0),
+            t: 1e8,
+            frnt: false,
+            mat: Rc::new(Lambertian::new(Vec3::new(0.0, 0.0, 0.0))),
+        }
+    }
+}
+
 pub trait Hittable {
     fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut Hit) -> bool;
 }
 
-pub struct HittableList {
+pub struct HitList {
     pub objects: Vec<Box<dyn Hittable>>,
 }
 
-impl HittableList {
+impl HitList {
     pub fn new(object: Box<dyn Hittable>) -> Self {
         Self {
             objects: vec![object],
@@ -66,7 +68,7 @@ impl HittableList {
     }
 
     pub fn hit(&self, r: &Ray, ray_t: Interval, rec: &mut Hit) -> bool {
-        let mut temp_rec: Hit = Hit::initialize();
+        let mut temp_rec: Hit = Hit::default();
         let mut hit_anything: bool = false;
         let mut closest_so_far: f64 = ray_t.max;
         for object in &self.objects {

@@ -1,9 +1,9 @@
 use crate::{
-    hittable::{Hit, Hittable},
+    hittable::{ Hit, Hittable },
     interval::Interval,
     material::Material,
     ray::Ray,
-    vec3::{dot, Vec3},
+    vec3::{ dot, Vec3 },
 };
 use std::rc::Rc;
 

@@ -1,7 +1,7 @@
-use crate::{interval::Interval, vec3::Vec3};
+use crate::{ interval::Interval, vec3::Vec3 };
 use rand::Rng;
 
-pub fn write_color(pixel_color: &Vec3, samples_per_pixel: u32) -> String {
+pub fn color_to_string(pixel_color: &Vec3, samples_per_pixel: u32) -> String {
     let mut r: f64 = pixel_color.x();
     let mut g: f64 = pixel_color.y();
     let mut b: f64 = pixel_color.z();

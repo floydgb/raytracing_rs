@@ -1,12 +1,19 @@
 use crate::{
     hittable::Hit,
     ray::Ray,
-    vec3::{dot, random_unit_vector, reflect, refract, unit_vector, Vec3},
+    vec3::{ dot, random_unit_vector, reflect, refract, unit_vector, Vec3 },
 };
-use rand::random;
+use rand::{ random, rngs::ThreadRng };
 
 pub trait Material {
-    fn scatter(&self, r_in: &Ray, rec: &mut Hit, atten: &mut Vec3, scat: &mut Ray) -> bool;
+    fn scatter(
+        &self,
+        r_in: &Ray,
+        rec: &mut Hit,
+        atten: &mut Vec3,
+        scat: &mut Ray,
+        rng: &mut ThreadRng
+    ) -> bool;
 }
 
 pub struct Lambertian {
@@ -20,8 +27,15 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, _r_in: &Ray, rec: &mut Hit, atten: &mut Vec3, scatt: &mut Ray) -> bool {
-        let mut scatter_direction = rec.norm + random_unit_vector();
+    fn scatter(
+        &self,
+        _r_in: &Ray,
+        rec: &mut Hit,
+        atten: &mut Vec3,
+        scatt: &mut Ray,
+        rng: &mut ThreadRng
+    ) -> bool {
+        let mut scatter_direction = rec.norm + random_unit_vector(rng);
         if scatter_direction.near_zero() {
             scatter_direction = rec.norm;
         }
@@ -47,9 +61,16 @@ impl Metal {
 }
 
 impl Material for Metal {
-    fn scatter(&self, r_in: &Ray, rec: &mut Hit, atten: &mut Vec3, scatt: &mut Ray) -> bool {
+    fn scatter(
+        &self,
+        r_in: &Ray,
+        rec: &mut Hit,
+        atten: &mut Vec3,
+        scatt: &mut Ray,
+        rng: &mut ThreadRng
+    ) -> bool {
         let reflected: Vec3 = reflect(unit_vector(r_in.direction()), rec.norm);
-        *scatt = Ray::new(rec.p, reflected + self.fuzz * random_unit_vector());
+        *scatt = Ray::new(rec.p, reflected + self.fuzz * random_unit_vector(rng));
         *atten = self.albedo;
         dot(scatt.direction(), rec.norm) > 0.0
     }
@@ -66,7 +87,14 @@ impl Dielectric {
 }
 
 impl Material for Dielectric {
-    fn scatter(&self, r_in: &Ray, rec: &mut Hit, atten: &mut Vec3, scatt: &mut Ray) -> bool {
+    fn scatter(
+        &self,
+        r_in: &Ray,
+        rec: &mut Hit,
+        atten: &mut Vec3,
+        scatt: &mut Ray,
+        _rng: &mut ThreadRng
+    ) -> bool {
         *atten = Vec3::new(1.0, 1.0, 1.0);
         let mut refraction_ratio = self.ir;
         if rec.frnt {

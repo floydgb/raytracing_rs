@@ -2,7 +2,7 @@ use rand::{ random, Rng };
 use raytracing::{
     camera::Camera,
     color::{ random_color, random_color_min_max, random_radius },
-    hittable::HittableList,
+    hittable::HitList,
     material::{ Dielectric, Lambertian, Metal },
     sphere::Sphere,
     vec3::Vec3,
@@ -11,17 +11,15 @@ use std::rc::Rc;
 
 fn main() {
     let ground_material = Rc::new(Lambertian::new(Vec3::new(0.5, 0.5, 0.5)));
-    let mut world: HittableList = HittableList::new(
+    let mut world: HitList = HitList::new(
         Box::new(Sphere::new(Vec3::new(0.0, -1000.0, -1.0), 1000.0, ground_material))
     );
     for a in -11..=11 {
         for b in -11..=11 {
-            let choose_mat = random::<f64>();
-            let center = Vec3::new(
-                (a as f64) + 0.9 * random::<f64>(),
-                0.2,
-                (b as f64) + 0.9 * random::<f64>()
-            );
+            let choose_mat: f64 = random();
+            let x = (a as f64) + 0.9 * random::<f64>();
+            let z = (b as f64) + 0.9 * random::<f64>();
+            let center = Vec3::new(x, 0.2, z);
             if (center - Vec3::new(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     let albedo = random_color();
@@ -48,7 +46,7 @@ fn main() {
     let mut cam: Camera = Camera::new();
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 1200;
-    cam.sample_per_pixel = 2048;
+    cam.sample_per_pixel = 256;
     cam.max_depth = 50;
     cam.vfov = 20.0;
     cam.look_from = Vec3::new(13.0, 2.0, 3.0);

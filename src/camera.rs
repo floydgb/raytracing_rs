@@ -1,13 +1,14 @@
 use crate::{
-    color::write_color,
+    color::color_to_string,
     degrees_to_radians,
-    hittable::{Hit, HittableList},
+    hittable::{ Hit, HitList },
     interval::Interval,
     ray::Ray,
-    vec3::{cross, random_in_unit_disk, unit_vector, Vec3},
+    vec3::{ cross, random_in_unit_disk, unit_vector, Vec3 },
 };
 use indicatif::ProgressBar;
-use std::{fs::File, io::Write};
+use rand::rngs::ThreadRng;
+use std::{ fs::File, io::Write };
 
 pub struct Camera {
     pub aspect_ratio: f64,
@@ -32,20 +33,16 @@ pub struct Camera {
     defocus_disk_v: Vec3,
 }
 
-fn ray_color(r: Ray, depth: u32, world: &HittableList) -> Vec3 {
-    let mut rec: Hit = Hit::initialize();
+fn ray_color(r: Ray, depth: u32, world: &HitList, rng: &mut ThreadRng) -> Vec3 {
+    let mut rec: Hit = Hit::default();
     if depth <= 0 {
         return Vec3::new(0.0, 0.0, 0.0);
     }
     if world.hit(&r, Interval::new(0.001, crate::INF), &mut rec) {
-        let mut scattered = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
-        let mut attenuation = Vec3::new(0.0, 0.0, 0.0);
-        if rec
-            .clone()
-            .mat
-            .scatter(&r, &mut rec, &mut attenuation, &mut scattered)
-        {
-            return attenuation * ray_color(scattered, depth - 1, world);
+        let mut scatt = Ray::new(Vec3::new(0.0, 0.0, 0.0), Vec3::new(0.0, 0.0, 0.0));
+        let mut atten = Vec3::new(0.0, 0.0, 0.0);
+        if rec.clone().mat.scatter(&r, &mut rec, &mut atten, &mut scatt, rng) {
+            return atten * ray_color(scatt, depth - 1, world, rng);
         }
         return Vec3::new(0.0, 0.0, 0.0);
     }
@@ -106,57 +103,46 @@ impl Camera {
         self.defocus_disk_v = self.v * defocus_radius;
     }
 
-    pub fn render(&mut self, world: &HittableList) {
+    pub fn render(&mut self, world: &HitList) {
         self.initialize();
-
+        let mut rng = ThreadRng::default();
         match File::create("image.ppm") {
             Ok(mut file) => {
-                write!(
-                    &mut file,
-                    "P3\n{} {}\n255\n",
-                    self.image_width, self.image_height
-                )
-                .expect("Can't write");
-                let pb = ProgressBar::new(self.image_height as u64);
+                write!(&mut file, "P3\n{} {}\n255\n", self.image_width, self.image_height).expect(
+                    "Write Succeeds"
+                );
+                let progress_bar = ProgressBar::new(self.image_height as u64);
                 let mut buf = String::new();
                 buf.reserve((self.image_width * self.image_height * 12) as usize);
                 for j in 0..self.image_height {
-                    pb.inc(1);
+                    progress_bar.inc(1);
                     for i in 0..self.image_width {
                         let mut pixel_color: Vec3 = Vec3::new(0.0, 0.0, 0.0);
                         for _sample in 0..self.sample_per_pixel {
-                            let r: Ray = self.get_ray(i, j);
-                            pixel_color += ray_color(r, self.max_depth, world);
+                            let r: Ray = self.get_ray(i, j, &mut rng);
+                            pixel_color += ray_color(r, self.max_depth, world, &mut rng);
                         }
-                        let result = write_color(&pixel_color, self.sample_per_pixel);
+                        let result = color_to_string(&pixel_color, self.sample_per_pixel);
                         buf.push_str(&result);
                     }
                 }
-                file.write_all(buf.as_bytes()).expect("Can't write");
-                pb.finish_with_message("Done!");
+                file.write_all(buf.as_bytes()).expect("Write Succeeds");
+                progress_bar.finish_with_message("Done!");
             }
-            Err(e) => {
-                println!("Could not open file... {}", e)
-            }
+            Err(e) => { println!("Could not open file... {}", e) }
         }
     }
 
-    fn get_ray(&mut self, i: u32, j: u32) -> Ray {
+    fn get_ray(&mut self, i: u32, j: u32, rng: &mut ThreadRng) -> Ray {
         let pixel_center: Vec3 =
             self.pixel00_loc + (i as f64) * self.pixel_delta_u + (j as f64) * self.pixel_delta_v;
         let pixel_sample = pixel_center + self.pixel_sample_square();
-        let ray_origin: Vec3;
-        if self.defocus_angle <= 0.0 {
-            ray_origin = self.center;
-        } else {
-            ray_origin = self.defocus_disk_sample();
-        }
-        let ray_direction = pixel_sample - ray_origin;
-        Ray::new(ray_origin, ray_direction)
+        let ray_origin = self.defocus_disk_sample(rng);
+        Ray::new(ray_origin, pixel_sample - ray_origin)
     }
 
-    fn defocus_disk_sample(&self) -> Vec3 {
-        let p = random_in_unit_disk();
+    fn defocus_disk_sample(&self, rng: &mut ThreadRng) -> Vec3 {
+        let p = random_in_unit_disk(rng);
         self.center + p.x() * self.defocus_disk_u + p.y() * self.defocus_disk_v
     }
 
